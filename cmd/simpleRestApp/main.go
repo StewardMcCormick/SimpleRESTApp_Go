@@ -24,7 +24,10 @@ func main() {
 		Handler: handler,
 	}
 
-	_ = server.ListenAndServe()
+	err := server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
