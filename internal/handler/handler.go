@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/model"
-	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/repository"
+	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/usecase"
 	"io"
 	"log"
 	"net/http"
@@ -13,12 +13,12 @@ import (
 )
 
 type Handler struct {
-	UserRepo repository.UserRepository
+	UserUseCase usecase.UserUseCase
 }
 
-func InitHttpHandler(userRepo repository.UserRepository) http.Handler {
+func InitHttpHandler(userUseCase usecase.UserUseCase) http.Handler {
 	mux := http.NewServeMux()
-	handler := &Handler{UserRepo: userRepo}
+	handler := &Handler{UserUseCase: userUseCase}
 
 	mux.HandleFunc("GET /", handler.getHello)
 	mux.HandleFunc("GET /users/{id}", handler.getById)
@@ -77,7 +77,7 @@ func (h *Handler) getById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.UserRepo.GetById(id)
+	user, err := h.UserUseCase.GetById(id)
 	if err != nil {
 		sendError(w, err, http.StatusNotFound)
 		return
@@ -93,7 +93,7 @@ func (h *Handler) getById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
-	users := h.UserRepo.GetAll()
+	users := h.UserUseCase.GetAll()
 
 	response, err := json.Marshal(users)
 	if err != nil {
@@ -111,14 +111,14 @@ func (h *Handler) postSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user model.User
+	var user model.CreateUserRequest
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		sendError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	savedUser, err := h.UserRepo.Save(user)
+	savedUser, err := h.UserUseCase.Create(user)
 	if err != nil {
 		sendError(w, err, http.StatusInternalServerError)
 		return

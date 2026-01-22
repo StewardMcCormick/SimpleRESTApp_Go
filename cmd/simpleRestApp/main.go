@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/handler"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/repository"
+	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/usecase"
 	"net/http"
 )
 
@@ -13,7 +14,8 @@ const (
 
 func main() {
 	userRepo := repository.NewInMemoryUserRepository()
-	h := handler.InitHttpHandler(userRepo)
+	userUseCase := usecase.NewUserUseCase(userRepo)
+	h := handler.InitHttpHandler(userUseCase)
 
 	server := &http.Server{
 		Addr:    host + ":" + port,
