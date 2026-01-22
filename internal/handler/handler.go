@@ -22,8 +22,8 @@ func InitHttpHandler(userUseCase usecase.UserUseCase) http.Handler {
 
 	mux.HandleFunc("GET /", handler.getHello)
 	mux.HandleFunc("GET /users/{id}", handler.getById)
-	mux.HandleFunc("GET /users/", handler.getAll)
-	mux.HandleFunc("POST /users/", handler.postSave)
+	mux.HandleFunc("GET /users", handler.getAll)
+	mux.HandleFunc("POST /users", handler.postSave)
 
 	h := loggingMiddleware(mux)
 	h = JSONContentTypeMiddleware(h)
