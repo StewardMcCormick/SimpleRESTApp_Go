@@ -9,7 +9,7 @@ type inMemoryUserRepository struct {
 	UserSlice []model.User
 }
 
-func NewInMemoryUserRepository() Repository {
+func NewInMemoryUserRepository() UserRepository {
 	return &inMemoryUserRepository{
 		UserSlice: make([]model.User, 0),
 	}
@@ -25,21 +25,11 @@ func (ur *inMemoryUserRepository) GetById(id int) (model.User, error) {
 	return model.User{}, fmt.Errorf("get user by id %d: %v", id, UserNotFound)
 }
 
-func (ur *inMemoryUserRepository) GetByEmail(email string) (model.User, error) {
-	for _, u := range ur.UserSlice {
-		if u.Email == email {
-			return u, nil
-		}
-	}
-
-	return model.User{}, fmt.Errorf("get user by email %s: %v", email, UserNotFound)
-}
-
 func (ur *inMemoryUserRepository) GetAll() []model.User {
 	return ur.UserSlice
 }
 
-func (ur *inMemoryUserRepository) Save(user model.User) (int, error) {
+func (ur *inMemoryUserRepository) Save(user model.User) (model.User, error) {
 	ur.UserSlice = append(ur.UserSlice, user)
-	return user.Id, nil
+	return user, nil
 }
