@@ -49,6 +49,23 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func sendError(w http.ResponseWriter, err error, code int) {
+	log.Printf("%s", err.Error())
+	response := ErrorResponse{
+		Status:  code,
+		Message: err.Error(),
+	}
+
+	jsonResponse, jsonError := json.Marshal(response)
+	if jsonError != nil {
+		http.Error(w, "JSON Marhsalling error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(code)
+	w.Write(jsonResponse)
+}
+
 func (h *Handler) getHello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hello from User REST-service!")
 }
@@ -56,21 +73,19 @@ func (h *Handler) getHello(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Printf("Incorrect value in request: %v", err)
-		http.Error(w, fmt.Sprintf("incorrect value for id: %s", r.PathValue("id")), http.StatusBadRequest)
+		sendError(w, fmt.Errorf("incorrect value for id: %s", r.PathValue("id")), http.StatusBadRequest)
 		return
 	}
 
 	user, err := h.UserRepo.GetById(id)
 	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, err.Error(), http.StatusNoContent)
+		sendError(w, err, http.StatusNoContent)
+		return
 	}
 
 	response, err := json.Marshal(user)
 	if err != nil {
-		log.Printf("Error JSON Marshaling: %v", err)
-		http.Error(w, "Error JSON Marshaling", http.StatusInternalServerError)
+		sendError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -82,8 +97,7 @@ func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
 
 	response, err := json.Marshal(users)
 	if err != nil {
-		log.Printf("Error JSON Marshaling: %v", err)
-		http.Error(w, "Error JSON Marshaling", http.StatusInternalServerError)
+		sendError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -93,23 +107,20 @@ func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) postSave(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Reading request body error: %v", err)
-		http.Error(w, "Reading request body error", http.StatusInternalServerError)
+		sendError(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	var user model.User
 	err = json.Unmarshal(body, &user)
 	if err != nil {
-		log.Printf("JSON unmarshaling error: %v", err)
-		http.Error(w, "Incorrect request body", http.StatusBadRequest)
+		sendError(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	savedUser, err := h.UserRepo.Save(user)
 	if err != nil {
-		log.Printf("Save User error: %v", err)
-		http.Error(w, "Saving error", http.StatusInternalServerError)
+		sendError(w, err, http.StatusInternalServerError)
 		return
 	}
 
