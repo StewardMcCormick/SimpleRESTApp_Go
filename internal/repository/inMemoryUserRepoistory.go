@@ -2,7 +2,12 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/model"
+)
+
+var (
+	UserNotFound = errors.New("user was not found")
 )
 
 type inMemoryUserRepository struct {
@@ -22,7 +27,7 @@ func (ur *inMemoryUserRepository) GetById(id int) (model.User, error) {
 		}
 	}
 
-	return model.User{}, errors.New("")
+	return model.User{}, fmt.Errorf("get user by id %d: %v", id, UserNotFound)
 }
 
 func (ur *inMemoryUserRepository) GetByEmail(email string) (model.User, error) {
@@ -32,7 +37,7 @@ func (ur *inMemoryUserRepository) GetByEmail(email string) (model.User, error) {
 		}
 	}
 
-	return model.User{}, errors.New("")
+	return model.User{}, fmt.Errorf("get user by email %s: %v", email, UserNotFound)
 }
 
 func (ur *inMemoryUserRepository) GetAll() []model.User {
