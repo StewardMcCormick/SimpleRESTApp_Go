@@ -6,4 +6,5 @@ type Repository interface {
 	GetById(id int) (model.User, error)
 	GetByEmail(email string) (model.User, error)
 	GetAll() []model.User
+	Save(user model.User) (int, error)
 }

@@ -1,13 +1,8 @@
 package repository
 
 import (
-	"errors"
 	"fmt"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/model"
-)
-
-var (
-	UserNotFound = errors.New("user was not found")
 )
 
 type inMemoryUserRepository struct {
@@ -42,4 +37,9 @@ func (ur *inMemoryUserRepository) GetByEmail(email string) (model.User, error) {
 
 func (ur *inMemoryUserRepository) GetAll() []model.User {
 	return ur.UserSlice
+}
+
+func (ur *inMemoryUserRepository) Save(user model.User) (int, error) {
+	ur.UserSlice = append(ur.UserSlice, user)
+	return user.Id, nil
 }
