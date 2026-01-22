@@ -79,7 +79,7 @@ func (h *Handler) getById(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.UserRepo.GetById(id)
 	if err != nil {
-		sendError(w, err, http.StatusNoContent)
+		sendError(w, err, http.StatusNotFound)
 		return
 	}
 
