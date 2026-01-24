@@ -4,6 +4,7 @@ import (
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/handler"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/repository"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/usecase"
+	"log"
 	"net/http"
 )
 
@@ -22,6 +23,7 @@ func main() {
 		Handler: h,
 	}
 
+	log.Printf("Start server on %s:%s", host, port)
 	err := server.ListenAndServe()
 	if err != nil {
 		panic(err)

@@ -24,6 +24,7 @@ func InitHttpHandler(userUseCase usecase.UserUseCase) http.Handler {
 	mux.HandleFunc("GET /users/{id}", handler.getById)
 	mux.HandleFunc("GET /users", handler.getAll)
 	mux.HandleFunc("POST /users", handler.postSave)
+	mux.HandleFunc("DELETE /users/{id}", handler.delete)
 
 	h := loggingMiddleware(mux)
 	h = JSONContentTypeMiddleware(h)
@@ -126,4 +127,18 @@ func (h *Handler) postSave(w http.ResponseWriter, r *http.Request) {
 
 	response, _ := json.Marshal(savedUser)
 	w.Write(response)
+}
+
+func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	err = h.UserUseCase.Delete(id)
+	if err != nil {
+		sendError(w, err, http.StatusNotFound)
+		return
+	}
 }
