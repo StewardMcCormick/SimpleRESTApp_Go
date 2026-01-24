@@ -26,8 +26,10 @@ func InitHttpHandler(userUseCase usecase.UserUseCase) http.Handler {
 	mux.HandleFunc("POST /users", handler.postSave)
 	mux.HandleFunc("DELETE /users/{id}", handler.delete)
 
-	h := loggingMiddleware(mux)
-	h = JSONContentTypeMiddleware(h)
+	h := Chain(
+		loggingMiddleware,
+		JSONContentTypeMiddleware,
+	)(mux)
 
 	return h
 }
