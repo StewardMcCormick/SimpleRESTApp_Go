@@ -172,7 +172,7 @@ func (h *Handler) putUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.UserUseCase.Put(id, request)
 	if err != nil {
-		sendError(w, err, http.StatusBadRequest)
+		sendError(w, err, http.StatusNotFound)
 		return
 	}
 
@@ -207,6 +207,19 @@ func (h *Handler) patchUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := h.UserUseCase.Patch(id, request)
+	if err != nil {
+		sendError(w, err, http.StatusNotFound)
+		return
+	}
+
+	response, err := json.Marshal(user)
+	if err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	w.Write(response)
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {

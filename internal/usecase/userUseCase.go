@@ -114,5 +114,6 @@ func (uc *userUseCase) toResponse(user *model.User) *model.UserResponse {
 		Username:  user.Username,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 }
