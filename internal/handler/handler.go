@@ -31,6 +31,8 @@ func InitHttpHandler(userUseCase usecase.UserUseCase) http.Handler {
 	mux.HandleFunc("GET /users/{id}", handler.getById)
 	mux.HandleFunc("GET /users", handler.getAll)
 	mux.Handle("POST /users", isJSONValidMiddleware(http.HandlerFunc(handler.postSave)))
+	mux.Handle("PUT /users/{id}", isJSONValidMiddleware(http.HandlerFunc(handler.putUser)))
+	mux.Handle("PATCH /users/{id}", isJSONValidMiddleware(http.HandlerFunc(handler.patchUser)))
 	mux.HandleFunc("DELETE /users/{id}", handler.delete)
 
 	h := Chain(
@@ -126,8 +128,9 @@ func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) postSave(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
+	defer r.Body.Close()
 
-	var user model.CreateUserRequest
+	var user model.PostUserRequest
 	json.Unmarshal(body, &user)
 
 	if err := h.Validator.Struct(user); err != nil {
@@ -148,6 +151,42 @@ func (h *Handler) postSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(response)
+}
+
+func (h *Handler) putUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	body, _ := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	var request model.PutUserRequest
+	json.Unmarshal(body, &request)
+
+	if err = h.Validator.Struct(request); err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.UserUseCase.Put(id, request)
+	if err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	response, err := json.Marshal(user)
+	if err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	w.Write(response)
+}
+
+func (h *Handler) patchUser(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
