@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/model"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/usecase"
+	"github.com/go-playground/validator/v10"
 	"io"
 	"log"
 	"net/http"
@@ -14,27 +17,57 @@ import (
 
 type Handler struct {
 	UserUseCase usecase.UserUseCase
+	Validator   *validator.Validate
 }
 
 func InitHttpHandler(userUseCase usecase.UserUseCase) http.Handler {
 	mux := http.NewServeMux()
-	handler := &Handler{UserUseCase: userUseCase}
+	handler := &Handler{
+		UserUseCase: userUseCase,
+		Validator:   validator.New(),
+	}
 
 	mux.HandleFunc("GET /", handler.getHello)
 	mux.HandleFunc("GET /users/{id}", handler.getById)
 	mux.HandleFunc("GET /users", handler.getAll)
-	mux.HandleFunc("POST /users", handler.postSave)
+	mux.Handle("POST /users", isJSONValidMiddleware(http.HandlerFunc(handler.postSave)))
 	mux.HandleFunc("DELETE /users/{id}", handler.delete)
 
 	h := Chain(
 		loggingMiddleware,
-		JSONContentTypeMiddleware,
+		jsonContentTypeMiddleware,
 	)(mux)
 
 	return h
 }
 
-func JSONContentTypeMiddleware(next http.Handler) http.Handler {
+func isJSONValidMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		defer r.Body.Close()
+
+		if err != nil {
+			sendError(w, errors.New("cannot read request body"), http.StatusBadRequest)
+			return
+		}
+
+		if len(body) == 0 {
+			sendError(w, errors.New("request body is required"), http.StatusBadRequest)
+			return
+		}
+
+		if !json.Valid(body) {
+			sendError(w, errors.New("invalid JSON body"), http.StatusBadRequest)
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
@@ -52,31 +85,15 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func sendError(w http.ResponseWriter, err error, code int) {
-	log.Printf("%s", err.Error())
-	response := ErrorResponse{
-		Status:  code,
-		Message: err.Error(),
-	}
-
-	jsonResponse, jsonError := json.Marshal(response)
-	if jsonError != nil {
-		http.Error(w, "JSON Marhsalling error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(code)
-	w.Write(jsonResponse)
-}
-
 func (h *Handler) getHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hello from User REST-service!")
+	fmt.Fprint(w, `{"message": "Hello from User REST-service!"}`)
 }
 
 func (h *Handler) getById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		sendError(w, fmt.Errorf("incorrect value for id: %s", r.PathValue("id")), http.StatusBadRequest)
+		sendError(w, errors.New(fmt.Sprintf("incorrect value for id: %s", r.PathValue("id"))),
+			http.StatusBadRequest)
 		return
 	}
 
@@ -108,16 +125,13 @@ func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) postSave(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		sendError(w, err, http.StatusInternalServerError)
-		return
-	}
+	body, _ := io.ReadAll(r.Body)
 
 	var user model.CreateUserRequest
-	err = json.Unmarshal(body, &user)
-	if err != nil {
-		sendError(w, err, http.StatusInternalServerError)
+	json.Unmarshal(body, &user)
+
+	if err := h.Validator.Struct(user); err != nil {
+		sendError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -127,7 +141,12 @@ func (h *Handler) postSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, _ := json.Marshal(savedUser)
+	response, err := json.Marshal(savedUser)
+	if err != nil {
+		sendError(w, err, http.StatusInternalServerError)
+		return
+	}
+
 	w.Write(response)
 }
 
