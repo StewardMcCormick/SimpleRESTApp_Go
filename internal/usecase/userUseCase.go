@@ -88,14 +88,22 @@ func (uc *userUseCase) Patch(id int, user model.PatchUserRequest) (*model.UserRe
 		return nil, err
 	}
 
+	updated := false
+
 	if user.Username != nil && *user.Username != userToUpdate.Username {
 		userToUpdate.Username = *user.Username
+		updated = true
 	}
 	if user.Email != nil && *user.Email != userToUpdate.Email {
 		userToUpdate.Email = *user.Email
 	}
 	if user.Password != nil && *user.Password != userToUpdate.Password {
 		userToUpdate.Password = *user.Password
+		updated = true
+	}
+
+	if !updated {
+		return uc.toResponse(userToUpdate), nil
 	}
 
 	userToUpdate.UpdatedAt = time.Now()
