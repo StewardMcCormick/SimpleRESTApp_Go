@@ -186,6 +186,26 @@ func (h *Handler) putUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) patchUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	body, _ := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	var request model.PatchUserRequest
+	json.Unmarshal(body, &request)
+
+	if err = h.Validator.Struct(request); err != nil {
+		sendError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if h.isEmptyPatch(request) {
+		sendError(w, errors.New("no fields to update"), http.StatusBadRequest)
+		return
+	}
 
 }
 
@@ -201,4 +221,8 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		sendError(w, err, http.StatusNotFound)
 		return
 	}
+}
+
+func (h *Handler) isEmptyPatch(user model.PatchUserRequest) bool {
+	return user.Username == nil && user.Email == nil && user.Password == nil
 }

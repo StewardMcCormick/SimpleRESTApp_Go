@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/StewardMcCormick/SimpleRESTApp_Go/internal/model"
 	"slices"
-	"time"
 )
 
 type UserRepository interface {
@@ -13,6 +12,7 @@ type UserRepository interface {
 	Save(user *model.User) (*model.User, error)
 	Delete(id int) error
 	Put(user *model.User) error
+	Patch(user *model.User) error
 }
 
 type inMemoryUserRepository struct {
@@ -65,10 +65,14 @@ func (ur *inMemoryUserRepository) Put(user *model.User) error {
 			u.Username = user.Username
 			u.Email = user.Email
 			u.Password = user.Password
-			u.UpdatedAt = time.Now()
+			u.UpdatedAt = user.UpdatedAt
 			return nil
 		}
 	}
 
 	return UserNotFound
+}
+
+func (ur *inMemoryUserRepository) Patch(user *model.User) error {
+	return ur.Put(user)
 }

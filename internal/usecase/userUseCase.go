@@ -12,6 +12,7 @@ type UserUseCase interface {
 	GetAll() []*model.UserResponse
 	Delete(id int) error
 	Put(id int, user model.PutUserRequest) (*model.UserResponse, error)
+	Patch(id int, user model.PatchUserRequest) (*model.UserResponse, error)
 }
 
 type userUseCase struct {
@@ -73,11 +74,38 @@ func (uc *userUseCase) Put(id int, user model.PutUserRequest) (*model.UserRespon
 	userFromDb.Username = user.Username
 	userFromDb.Email = user.Email
 	userFromDb.Password = user.Password
+	userFromDb.UpdatedAt = time.Now()
 	if err = uc.userRepo.Put(userFromDb); err != nil {
 		return nil, err
 	}
 
 	return uc.toResponse(userFromDb), nil
+}
+
+func (uc *userUseCase) Patch(id int, user model.PatchUserRequest) (*model.UserResponse, error) {
+	userToUpdate, err := uc.userRepo.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Username != nil && *user.Username != userToUpdate.Username {
+		userToUpdate.Username = *user.Username
+	}
+	if user.Email != nil && *user.Email != userToUpdate.Email {
+		userToUpdate.Email = *user.Email
+	}
+	if user.Password != nil && *user.Password != userToUpdate.Password {
+		userToUpdate.Password = *user.Password
+	}
+
+	userToUpdate.UpdatedAt = time.Now()
+
+	err = uc.userRepo.Patch(userToUpdate)
+	if err != nil {
+		return nil, err
+	}
+
+	return uc.toResponse(userToUpdate), nil
 }
 
 func (uc *userUseCase) toResponse(user *model.User) *model.UserResponse {
